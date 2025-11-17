@@ -1,0 +1,64 @@
+name: CI/CD for React Web
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout source
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      # 3️⃣ Install dependencies & Build
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React App
+        run: npm run build
+        env:
+          REACT_APP_API_BASE_URL: ${{ secrets.API_BASE_URL }}
+
+      # 4️⃣ Login Docker Hub
+      - name: Login to Docker Hub
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      # 5️⃣ Build & Push Docker image
+      - name: Build & Push Docker Image
+        run: |
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/fwfe-web:latest
+          docker build --build-arg REACT_APP_API_BASE_URL=${{ secrets.API_BASE_URL }} -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+
+      # 6️⃣ Deploy to VPS
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          password: ${{ secrets.VPS_PASS }}
+          script: |
+            echo "==== 🚀 Deploy React Web ===="
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/fwfe-web:latest
+
+            docker stop fwfe-web || true
+            docker rm fwfe-web || true
+
+            docker run -d \
+              --name fwfe-web \
+              -p 81:81 \
+              ${{ secrets.DOCKER_USERNAME }}/fwfe-web:latest
+
+            echo "✅ React Web đã chạy tại cổng 81!"

@@ -1,0 +1,22 @@
+import { useNavigate } from "react-router-dom";
+
+export default function UserNavbar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  return (
+    <header className="bg-green-500 shadow flex justify-between items-center px-6 py-3">
+      <h1 className="text-xl font-bold text-white">🧪 Giao diện User/Manager</h1>
+      <button
+        onClick={handleLogout}
+        className="bg-white text-green-500 px-3 py-1 rounded hover:bg-gray-100"
+      >
+        Đăng xuất
+      </button>
+    </header>
+  );
+}
