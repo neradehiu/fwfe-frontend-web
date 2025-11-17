@@ -1,4 +1,6 @@
+# ===============================
 # Stage 1: Build React App
+# ===============================
 FROM node:20 AS build
 
 ARG REACT_APP_API_BASE_URL
@@ -8,17 +10,19 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
-COPY . .
 
+COPY . .
 RUN npm run build
 
+# ===============================
 # Stage 2: Serve with Nginx
+# ===============================
 FROM nginx:alpine
 
-# Copy output build (dist) vào Nginx
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy build output vào Nginx
+COPY --from=build /app/dist /usr/share/nginx/html/react
 
-# Custom nginx config (port 81)
+# Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 81
