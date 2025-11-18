@@ -1,45 +1,119 @@
-import axios from "axios";
+import api from "./api";
 
-// Lấy token từ localStorage (hoặc bạn lưu token ở đâu)
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  const username = localStorage.getItem("username"); // lưu username khi login
-  const role = localStorage.getItem("role"); // lưu role khi login
+const username = localStorage.getItem("username");
+const role = localStorage.getItem("role");
 
-  if (!token || !username || !role) {
-    throw new Error("Chưa có token hoặc thông tin user");
-  }
-
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-    "X-Username": username,
-    "X-Role": role,
-  };
-};
-
-const API_BASE_URL = "https://fwfe.duckdns.org/api";
-const BASE_URL = `${API_BASE_URL}/works-posted`;
-
+/**
+ * Lấy tất cả công việc
+ */
 export const getAllWorks = async () => {
-  const headers = getAuthHeaders();
-  const res = await axios.get(BASE_URL, { headers });
-  return res.data;
+  try {
+    const res = await api.get("/works-posted", {
+      headers: { "X-Role": role },
+    });
+    return res.data.map((e) => ({
+      id: e.id,
+      position: e.position,
+      descriptionWork: e.descriptionWork,
+      salary: e.salary,
+      companyId: e.companyId,
+      company: e.companyName,
+      createdByUsername: e.createdByUsername,
+    }));
+  } catch (err) {
+    console.error("Lỗi khi load tất cả công việc:", err);
+    throw err;
+  }
 };
 
+/**
+ * Lấy chi tiết 1 công việc theo id
+ */
+export const getWork = async (id) => {
+  try {
+    const res = await api.get(`/works-posted/${id}`, {
+      headers: { "X-Role": role },
+    });
+    const e = res.data;
+    return {
+      id: e.id,
+      position: e.position,
+      descriptionWork: e.descriptionWork,
+      salary: e.salary,
+      companyId: e.companyId,
+      company: e.companyName,
+      createdByUsername: e.createdByUsername,
+    };
+  } catch (err) {
+    console.error(`Lỗi khi load chi tiết công việc id=${id}:`, err);
+    throw err;
+  }
+};
+
+/**
+ * Tạo công việc mới
+ */
 export const createWork = async (data) => {
-  const headers = getAuthHeaders();
-  const res = await axios.post(BASE_URL, data, { headers });
-  return res.data;
+  try {
+    const res = await api.post("/works-posted", data, {
+      headers: { "X-Username": username },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Lỗi khi tạo công việc:", err);
+    throw err;
+  }
 };
 
+/**
+ * Cập nhật công việc
+ */
 export const updateWork = async (id, data) => {
-  const headers = getAuthHeaders();
-  const res = await axios.put(`${BASE_URL}/${id}`, data, { headers });
-  return res.data;
+  try {
+    const res = await api.put(`/works-posted/${id}`, data, {
+      headers: { "X-Username": username, "X-Role": role },
+    });
+    return res.data;
+  } catch (err) {
+    console.error(`Lỗi khi cập nhật công việc id=${id}:`, err);
+    throw err;
+  }
 };
 
+/**
+ * Xóa công việc
+ */
 export const deleteWork = async (id) => {
-  const headers = getAuthHeaders();
-  await axios.delete(`${BASE_URL}/${id}`, { headers });
+  try {
+    await api.delete(`/works-posted/${id}`, {
+      headers: { "X-Username": username, "X-Role": role },
+    });
+  } catch (err) {
+    console.error(`Lỗi khi xóa công việc id=${id}:`, err);
+    throw err;
+  }
+};
+
+/**
+ * Tìm kiếm công việc theo từ khóa
+ * Lưu ý: backend phải có endpoint /works-posted/search
+ */
+export const searchWorks = async (keyword) => {
+  try {
+    const res = await api.get(
+      `/works-posted/search?keyword=${encodeURIComponent(keyword)}`
+    );
+    return res.data.map((e) => ({
+      id: e.id,
+      position: e.position,
+      descriptionWork: e.descriptionWork,
+      salary: e.salary,
+      companyId: e.companyId,
+      company: e.companyName,
+      createdByUsername: e.createdByUsername,
+    }));
+  } catch (err) {
+    console.error("Lỗi khi tìm kiếm công việc:", err);
+    throw err;
+  }
 };
