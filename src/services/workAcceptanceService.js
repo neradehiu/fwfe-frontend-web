@@ -22,30 +22,31 @@ const getAccountInfo = () => {
  * @param {object} options - { note: string, salaryExpected: number }
  * @returns {object|null} dữ liệu backend trả về hoặc null nếu lỗi
  */
-export const acceptWork = async (workId, { note = "", salaryExpected = 0 } = {}) => {
+export const acceptWork = async (workId) => {
   const accountInfo = getAccountInfo();
   if (!accountInfo) return null;
 
   const { accountId, username } = accountInfo;
 
   try {
-    const data = { workPostedId: workId, accountId, note, salaryExpected };
+    const data = { 
+      workPostedId: workId, 
+      accountId 
+    };
+
     const res = await api.post(`/works/${workId}/acceptances`, data, {
       headers: { "X-Username": username },
     });
+
     console.log("✅ Nhận việc thành công:", res.data);
     return res.data;
+
   } catch (err) {
     console.error("❌ Lỗi nhận việc:", err.response || err);
     return null;
   }
 };
 
-/**
- * 2. Lấy tất cả người nhận việc (Admin/Manager)
- * @param {number} workId
- * @returns {Array} danh sách người nhận việc
- */
 export const getAllAcceptances = async (workId) => {
   try {
     const res = await api.get(`/works/${workId}/acceptances`);

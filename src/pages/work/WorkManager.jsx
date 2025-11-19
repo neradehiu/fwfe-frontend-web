@@ -5,13 +5,13 @@ import {
   updateWork,
   deleteWork,
 } from "../../services/workService";
-
-import { getMyCompanies } from "../../services/companyService"; // 🔥 Lấy danh sách công ty
+import { getAllAcceptances } from "../../services/workAcceptanceService";
+import { getMyCompanies } from "../../services/companyService";
 
 const WorkManager = () => {
   const [works, setWorks] = useState([]);
-  const [companies, setCompanies] = useState([]); // 🔥 Danh sách công ty
-  const [selectedCompanyId, setSelectedCompanyId] = useState(""); // 🔥 Công ty được chọn
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [workForm, setWorkForm] = useState({
@@ -23,6 +23,7 @@ const WorkManager = () => {
     salary: "",
   });
 
+  // Load danh sách công ty
   const loadCompanies = async () => {
     try {
       const data = await getMyCompanies();
@@ -32,10 +33,22 @@ const WorkManager = () => {
     }
   };
 
+  // Load công việc + số người nhận thực tế
   const loadWorks = async () => {
     try {
       const data = await getAllWorks();
-      setWorks(data);
+
+      const worksWithAccepted = await Promise.all(
+        data.map(async (w) => {
+          const acceptances = await getAllAcceptances(w.id);
+          return {
+            ...w,
+            currentAccepted: acceptances.length, // số người nhận thực tế
+          };
+        })
+      );
+
+      setWorks(worksWithAccepted);
     } catch (e) {
       alert("Lỗi tải công việc: " + e);
     }
@@ -60,8 +73,7 @@ const WorkManager = () => {
         maxAccepted: workForm.maxAccepted === "" ? 0 : Number(workForm.maxAccepted),
         maxReceiver: workForm.maxReceiver === "" ? 0 : Number(workForm.maxReceiver),
         salary: workForm.salary === "" ? 0 : Number(workForm.salary),
-
-        companyId: Number(selectedCompanyId), // 🔥 Gửi companyId vào backend
+        companyId: Number(selectedCompanyId),
       };
 
       if (workForm.id) {
@@ -88,8 +100,7 @@ const WorkManager = () => {
       salary: w.salary ?? "",
     });
 
-    setSelectedCompanyId(w.companyId || ""); // 🔥 Gán công ty khi sửa
-
+    setSelectedCompanyId(w.companyId || "");
     setShowWorkModal(true);
   };
 
@@ -118,7 +129,7 @@ const WorkManager = () => {
             maxReceiver: "",
             salary: "",
           });
-          setSelectedCompanyId(""); // Reset công ty
+          setSelectedCompanyId("");
           setShowWorkModal(true);
         }}
       >
@@ -130,9 +141,11 @@ const WorkManager = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="text-left px-6 py-3">Vị trí</th>
+              <th className="text-left px-6 py-3">Mô tả</th>
               <th className="text-left px-6 py-3">Số người nhận</th>
               <th className="text-left px-6 py-3">Số CV tối đa</th>
               <th className="text-left px-6 py-3">Lương</th>
+              <th className="text-left px-6 py-3">Công ty</th>
               <th className="text-center px-6 py-3">Hành động</th>
             </tr>
           </thead>
@@ -140,9 +153,11 @@ const WorkManager = () => {
             {works.map((w) => (
               <tr key={w.id} className="hover:bg-gray-50 transition">
                 <td className="px-6 py-4">{w.position || "-"}</td>
-                <td className="px-6 py-4">{w.maxAccepted ?? "-"}</td>
-                <td className="px-6 py-4">{w.maxReceiver ?? "-"}</td>
-                <td className="px-6 py-4">{w.salary ?? "-"}</td>
+                <td className="px-6 py-4">{w.descriptionWork || "-"}</td>
+                <td className="px-6 py-4">{w.currentAccepted ?? 0}</td>
+                <td className="px-6 py-4">{w.maxReceiver ?? 0}</td>
+                <td className="px-6 py-4">{w.salary ?? 0}</td>
+                <td className="px-6 py-4">{w.company || "-"}</td>
                 <td className="px-6 py-4 text-center">
                   <div className="inline-flex gap-2">
                     <button
@@ -164,7 +179,7 @@ const WorkManager = () => {
 
             {works.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-400">
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-400">
                   Chưa có công việc nào
                 </td>
               </tr>
@@ -173,7 +188,7 @@ const WorkManager = () => {
         </table>
       </div>
 
-      {/* 🔥 Modal */}
+      {/* Modal tạo/sửa công việc */}
       {showWorkModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-lg">
@@ -182,7 +197,6 @@ const WorkManager = () => {
             </h2>
 
             <form className="flex flex-col gap-4" onSubmit={handleWorkSubmit}>
-              {/* Chọn công ty */}
               <select
                 className="border p-3 rounded-md"
                 required
