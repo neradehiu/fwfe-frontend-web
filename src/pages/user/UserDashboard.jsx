@@ -90,7 +90,7 @@ export default function UserDashboard() {
 
         alert("Nhận việc thành công!");
       } else {
-        alert("Không thể nhận việc. Vui lòng thử lại.");
+        alert("Chỉ dành cho UserUser.");
       }
     } catch (err) {
       console.error("Lỗi khi nhận việc:", err);
