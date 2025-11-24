@@ -19,11 +19,13 @@ RUN npm run build
 # ===============================
 FROM nginx:alpine
 
-# Copy build output vào Nginx
+# Copy build output vào thư mục Nginx
 COPY --from=build /app/dist /usr/share/nginx/html/react
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 81
+# Nginx mặc định listen 80
+EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
