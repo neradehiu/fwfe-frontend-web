@@ -1,13 +1,15 @@
 // src/pages/admin/SettingsPage.jsx
 import React, { useContext } from "react";
-import { ThemeContext } from "../../context/ThemeContext"; // sửa đường dẫn đúng
+import { ThemeContext } from "../../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
 
 export default function SettingsPage() {
   const { darkMode, setDarkMode } = useContext(ThemeContext);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    navigate("/login"); // router tự xử lý base URL, không bị lỗi /react/
   };
 
   return (
